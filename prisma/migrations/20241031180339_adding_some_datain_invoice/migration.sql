@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Invoice" ADD COLUMN     "amountPaid" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "paidAt" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "paidInFull" BOOLEAN NOT NULL DEFAULT false;

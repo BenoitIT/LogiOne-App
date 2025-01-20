@@ -1,0 +1,200 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  Int                   @id @default(autoincrement())
+  firstName           String
+  lastName            String
+  email               String                @unique
+  phone               String                @unique
+  role                String
+  gender              String
+  password            String
+  workCountry         String                @default("Rwanda")
+  deliverySite        deliverySite[]
+  stuffingReportItems stuffingreportItems[]
+  createdAt           DateTime              @default(now())
+  Invoice             Invoice[]
+  Commissions         Commissions[]
+}
+
+model deliverySite {
+  id             Int              @id @default(autoincrement())
+  country        String
+  locationName   String
+  user           User             @relation(fields: [agent], references: [id])
+  agent          Int
+  createdAt      DateTime         @default(now())
+  siteCode       String
+  stuffingreport stuffingreport[]
+}
+
+model deliveries {
+  id           Int      @id @default(autoincrement())
+  country      String
+  deliveryName String
+  createdAt    DateTime @default(now())
+}
+
+model shipper {
+  id             Int              @id @default(autoincrement())
+  name           String           @default("loginOne Company Ltd")
+  location       String           @default("Kigali-Rwanda")
+  email          String           @default("info@superfreightservice.com")
+  phone          String           @default("+250788713189")
+  stuffingreport stuffingreport[]
+  createdAt      DateTime         @default(now())
+}
+
+model consignee {
+  id                  Int                   @id @default(autoincrement())
+  name                String
+  location            String                @default("Rwanda,Kigali")
+  email               String
+  phone               String                @unique
+  tinnumber           String
+  stuffingreportItems stuffingreportItems[]
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @default(now())
+}
+
+model shippingInstruction {
+  id                  Int                 @id @default(autoincrement())
+  prepared            Boolean             @default(false)
+  portOfdischarge     String
+  deliveryTerm        String
+  prepaidFreight      Int                 @default(0)
+  prepaidBlFee        Int                 @default(0)
+  finaldeliverId      Int
+  itemId              Int                 @unique
+  stuffingReportItems stuffingreportItems @relation(fields: [itemId], references: [id],onDelete: Cascade)
+  createdAt           DateTime            @default(now())
+  updatedAt           String              @default("")
+}
+
+model stuffingreport {
+  id                  Int                   @id @default(autoincrement())
+  code                String
+  status              String
+  stuffingstatus      String                @default("preview")
+  origin              String
+  shipperId           Int
+  shipper             shipper               @relation(fields: [shipperId], references: [id])
+  stuffingreportItems stuffingreportItems[] @relation("StuffingReportToItems")
+  createdAt           DateTime              @default(now())
+  packagingType       String
+  blCode              String
+  deliverySite        deliverySite          @relation(fields: [deliverySiteId], references: [id])
+  deliverySiteId      Int
+  transportFee        Int                   @default(0)
+  seaFeee             Int                   @default(3700)
+  extraCharges        Int                   @default(0)
+  freightRate         Int                   @default(250)
+}
+
+model stuffingreportItems {
+  id               Int            @id @default(autoincrement())
+  container        stuffingreport @relation("StuffingReportToItems", fields: [stuffingreportid], references: [id], onDelete: Cascade)
+  stuffingreportid Int
+  consignee        consignee      @relation(fields: [consigneeId], references: [id])
+  consigneeId      Int
+  code             String
+  mark             String
+  salesAgentId     Int
+  salesAgent       User           @relation(fields: [salesAgentId], references: [id])
+  noOfPkgs         Int
+  typeOfPkg        String
+  weight           Int
+  line             Float
+  handling         Float
+  type             String
+  cbm              Float
+  description      String
+  freight          Float
+  blFee            Float
+  jb               Float
+  inspection       Float
+  carHanging       Float
+  recovery         Float
+  insurance        Float
+  localCharges     Float
+  invoiceNo        String         @unique
+  totalUsd         Float
+  totalAed         Float
+  invoice          Invoice[]
+  createdAt        DateTime       @default(now())
+  portOfdischarge  String         @default(" ")
+  totalinwords     String         @default("Amount in dollars")
+  updatedAt        String         @default("")
+  preparedBy       String         @default("")
+  editedBy         String         @default("")
+
+  shippingInstruction shippingInstruction[]
+}
+
+model Invoice {
+  id               Int                 @id @default(autoincrement())
+  vat              Float               @default(0)
+  details          stuffingreportItems @relation(fields: [detailsId], references: [invoiceNo],onDelete: Cascade)
+  createdBy        User                @relation(fields: [staffid], references: [id])
+  staffid          Int
+  detailsId        String              @unique
+  paidInFull       Boolean             @default(false)
+  amountPaid       Float               @default(0)
+  paidAt           String              @default("")
+  recievedBy       String              @default("")
+  paymentApproved  Boolean             @default(false)
+  releaseGenarated Boolean             @default(false)
+  createdAt        DateTime            @default(now())
+  approvedAt       String              @default("")
+}
+
+model Commissions {
+  id             Int      @id @default(autoincrement())
+  agent          User     @relation(fields: [agentId], references: [id])
+  agentId        Int
+  handling       Float
+  rate           Float
+  totalAmount    Float
+  stuffingItemId Int
+  amountPaid     Float    @default(0)
+  paymentStatus  String   @default("unpaid")
+  paidAt         String   @default("")
+  paidBy         String   @default("")
+  createdAt      DateTime @default(now())
+}
+
+model CalculationDependancy {
+  id                   Int   @id @default(autoincrement())
+  usd                  Int   @default(1)
+  aed                  Float @default(3.66)
+  freightRate          Float @default(260)
+  freightRateFullCont  Float @default(0)
+  groupageTransportFee Float @default(4800)
+  fullTransportFee     Float @default(0)
+  groupageSeaFee       Float @default(4700)
+  fullContSeaFee       Float @default(4700)
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  firstName String
+  lastName  String
+  email     String
+  phone     String
+  message   String
+  createdAt DateTime @default(now())
+  responded Boolean  @default(false)
+}
